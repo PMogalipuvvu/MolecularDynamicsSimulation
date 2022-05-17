@@ -131,7 +131,6 @@ This makes it necessary to recalculate position, velocity, and acceleration for 
 
 
 <h2 id="markdown">System Design</h2>
-<!-- <p align="justify">The flow of information in this lab is as follows: user input is communicated to the ARM via a C program running on the ARM through a USB mouse and input at the command line to control program state. The ARM, a bus master for communication on the Cyclone V board, passes particle positions to the FPGA via PIO ports where the hardware corresponding to the acceleration calculation for the simulator has been stored. A single solver on the FPGA reads in a pair of particle positions and calculates the forces on each particle due to the other. These forces are sent back to the ARM via PIOs where the ARM collects them and updates particle positions accordingly using the verlet algorithm. Particles are displayed in the top left region of the VGA from the ARM.</p> -->
 
 
 <h3 id="markdown">High Level Design Considerations</h3>
