@@ -91,31 +91,19 @@
 
 
 
-
+<img src="img/LJ_potential.png" alt="LJ" width="200"><br>
 
 The repulsive term, proportional to 1/r12, captures electron repulsion due to the Pauli exclusion principle, where electrons in neighboring atoms cannot be allowed to occupy the same energy state, unless they have opposite spins. Orbitals of an inert atom are usually full, which means that bringing the electrons of these atoms close together requires an extreme amount of energy and is overall an unfavorable process. This repulsion is represented by the spike in potential with decreasing atomic distance as shown in the plot of the LJ potential below.<br><br>
   
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
+<img src="img/LJ_plot.png" alt="LJ Plot"><br>
+
+
 The attractive force, proportional to 1/r6, captures dispersive interactions between atoms as a result of fluctuating partial charges on the surface of the atom. This should not be confused with bonding, which we model as an entirely different force. These types of weak interactions are akin to Van Der Waals forces which are a type of weak attractive interaction. The superposition of the attractive and repulsive forces yields a potential well at an equilibrium distance rm between atoms where the potential is minimized. Given the repulsive force is proportional to a much larger exponential, it falls off much more quickly with atomic distance than does the attraction, but it blows up exponentially on extremely small scales. <br><br>
   
 In the first equation, epsilon is the dispersion energy, and regulates the depth of the potential well. Sigma is the distance where the particle interaction becomes zero. Both parameters can be manipulated depending on the types of molecules being simulated. The LJ potential captures basic phase changes very well which is why it was an appealing target for this project. <br><br>
   
 To actually use the Loenard Jones potential in a force calculation, a derivative needs to be taken in order to calculate.<br><br>
+<img src="img/LJ_force.png" alt="LJ Force" width="300"><br>
   
   
 In order to increase computational efficiency, the LJ potential is never directly calculated, because only the resulting force is required. As such, only the above equation appears in the project implementation.<br><br>
@@ -134,6 +122,7 @@ In the project, when calculating the LJ force we not only had to update the acce
 
 
 
+<img src="img/verlet.png" alt="LJ verlet" width = 300><br>
 
 
 
@@ -172,13 +161,13 @@ As described in the Mathematical Background, the walls act as a spring with a sp
   
 This net acceleration is used to calculate the position and the velocity updates of  the particles. The C program then draws the updated particles onto the screen  Additionally, a separate function determines the color of the particles based on the current velocity of the  particle. C’s ability to easily manipulate multiple arrays easily, influenced the decision to only calculate the acceleration in hardware.<br><br>
   
-To enhance the user experience, a mouse interface was added to add the particles into the system. The raw data received from the mouse contains the relative change since the last update. So, to maintain an accurate record of the position, the mouse is initialized to be at the center of the screen and the relative change is accumulated to calculate the current position. On a single mouse click, the program creates 10 new particles with randomly initialized positions and velocities. This UX also allows the user to dynamically change the size of the box and add/remove energy from the system. The removal/addition of energy is handled by subtracting/adding a factor to the current velocity. Additionally, the gravity can be toggled to ??. The user can also dynamically change the box size using key inputs and the particles out of bounds at that time will be pushed into the box automatically.<br><br>
+To enhance the user experience, a mouse interface was added to add the particles into the system. The raw data received from the mouse contains the relative change since the last update. So, to maintain an accurate record of the position, the mouse is initialized to be at the center of the screen and the relative change is accumulated to calculate the current position. On a single mouse click, the program creates 10 new particles with randomly initialized positions and velocities. This UX also allows the user to dynamically change the size of the box and add/remove energy from the system. The removal/addition of energy is handled by subtracting/adding a factor to the current velocity. Additionally, the gravity can be toggled to observe the interaction of the particles in isolation. The user can also dynamically change the box size using key inputs and the particles out of bounds at that time will be pushed into the box automatically.<br><br>
 </p>
 
 
 <h3 id="markdown">Hardware design</h3>
 
-<p>To implement the equation in Fig ?? to calculate the forces, would require a minimum of eight multipliers and one inversion to calculate 1/r^2, allowing for a maximum of parallel solvers. One method to reduce the number of multipliers is to reuse a single multiplier and use a state machine to control the inputs to and outputs from it. However, this method has the disadvantage of taking multiple cycles to calculate the value.<br><br>
+<p>To implement the LJ equation  to calculate the forces, would require a minimum of eight multipliers and one inversion to calculate 1/r^2, allowing for a maximum of parallel solvers. One method to reduce the number of multipliers is to reuse a single multiplier and use a state machine to control the inputs to and outputs from it. However, this method has the disadvantage of taking multiple cycles to calculate the value.<br><br>
 
 On the other hand, a  purely combinational implementation can compute the acceleration instantly and the ARM does not need to wait for the iterator to finish computation. This allows for a significant increase in the speed and also reduces the complexity of the implementation. <br><br>
   
@@ -196,6 +185,7 @@ A consequence of the fixed point arithmetic and the approximation from the looku
 
 
 
+  <img src="img/results1.png" alt="results1"><br>
 
 
 
@@ -210,136 +200,47 @@ A consequence of the fixed point arithmetic and the approximation from the looku
 
 
 
-  Figure X. Molecules fit container like a liquid when gravity is toggled<br><br>
+  Figure 1. Molecules fit container like a liquid when gravity is toggled<br><br>
   
   The interesting part about adding and removing energy from the system is that the changes were not permanent. When energy was added to the system, the atoms would fly apart as bonds broke and the LJ potentials were escaped. Atoms would fly around the screen at high velocity and collide into the walls and each other without reforming bonds or getting stuck together. To do this though the add energy command in the user interface would have to be “spammed”. In other words, we would have to continuously add energy to keep the molecules in the simulated gas phase. Something about the modeled physics implicitly damped particle motion so that after a short period of time without adding energy we would observe a phase change back to the liquid state. This change is shown in figure ___ below.<br><br>
   
   
   
   
+  <img src="img/condensation1.png" alt="condensation1" width="400"><br>
+  <img src="img/condensation2.png" alt="condensation2" width="400"><br>
+  <img src="img/condensation3.png" alt="condensation3" width="400"><br>
+  <img src="img/condensation4.png" alt="condensation4" width="400"><br>
+  <img src="img/condensation5.png" alt="condensation5" width="400"><br>
+  <img src="img/condensation6.png" alt="condensation6" width="400"><br>
   
   
   
   
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  Figure X. Progression of condensation without gravity for a system with > 100 particles<br><br>
+  Figure 2. Progression of condensation without gravity for a system with > 100 particles<br><br>
   
   
   Initially energy was added by the user to start the system in the gas phase. Figure X. demonstrates the implicit cooling effect we observed in the simulation. When given time to equilibrate clusters of molecules started to form and then larger ones would form as smaller ones collided with them. The opposite was true in the solid phase. Cooling the composition down continuously would leave molecules in a rigid crystal structure. Due to the way we handled bonding, each atom would form a bond with 6 neighbors, and a 2D hexagonal structure was observed.<br><br>
   
   
   
+  <img src="img/hexagonal.png" alt="hexagonal" width="400"><br>
   
   
-  
-  
-  
-  
-  
-  
-  
-  
-  Figure X. 2D Hexagonal solid structure<br><br>
+  Figure 3. 2D Hexagonal solid structure<br><br>
   
   Left to equilibrate, the LJ interactions would lead to melting back into the liquid phase as particules started to interact and move again. Even in the liquid phase though, an organized structure could be observed. This suggests that the equilibrium state was a hybrid between a liquid and a solid. A lolsquid if you will. We also allowed the user to control the size of the container that the particles were in. Making the box smaller had an effect similar to what would be observed with adiabatic compression. Initially, as the box became smaller, particle interactions resulting from the shifting sides formed something similar to a wave<br><br>
   
   
+  <img src="img/wave.png" alt="wave" width="400"><br>
   
   
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  Figure X. Wave like motion due to the user manipulating the size of the box.<br><br>
+  Figure 4. Wave like motion due to the user manipulating the size of the box.<br><br>
   
   As the box became small enough to inhibit molecular motion, forces on the boundaries forced closer intermolecular interaction.<br><br>
   
   
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
+  <img src="img/small_box.png" alt="small_box" width="400"><br>
   
   
   It’s hard to tell from a static picture, but when visualized in real time its clear the atoms are vibrating at much higher frequencies. This means their average velocity is greater and hence the temperature of the system is higher. We did not explicitly monitor or regulate temperature here, but used molecular speeds as a proxy. This is consistent with the result of adiabatic compression of a substance. <br><br>
@@ -362,38 +263,6 @@ It seems then, that in order to truly accelerate the calculation on the FPGA eve
 
 
 <p>A Leonard Jones molecular dynamics simulation was implemented on an Altera System-on-Chip development platform. The simulation successfully demonstrated the interaction of hundreds of inert molecules on a reasonable timescale such that atomic vibrations could be visualized in real time. The simulation also demonstrated phenomena associated with inert molecules like phase changes and adiabatic effects during compression. Though we did not get all the way to simulating water, requiring a non-uniform potential distribution, the simulation still provides good insight into molecular dynamics and its viability on an FPGA. The project serves as a good basis for continued work, especially in the direction of acceleration (supporting more particles) or physical complexity (non-uniform potential distributions for asymmetric molecules).<br><br></p>
-
-
-<h2 id="markdown">Everyting below is junk</h2>
-
-<p>Markdown is a lightweight and easy-to-use syntax for styling your writing. It includes conventions for</p>
-
-<div class="language-markdown highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Syntax highlighted code block
-
-<span class="gh"># Header 1</span>
-<span class="gu">## Header 2</span>
-<span class="gu">### Header 3</span>
-<span class="p">
--</span> Bulleted
-<span class="p">-</span> List
-<span class="p">
-1.</span> Numbered
-<span class="p">2.</span> List
-
-<span class="gs">**Bold**</span> and _Italic_ and <span class="sb">`Code`</span> text
-
-<span class="p">[</span><span class="nv">Link</span><span class="p">](</span><span class="sx">url</span><span class="p">)</span> and !<span class="p">[</span><span class="nv">Image</span><span class="p">](</span><span class="sx">src</span><span class="p">)</span>
-</code></pre></div></div>
-
-<p>For more details see <a href="https://docs.github.com/en/github/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax">Basic writing and formatting syntax</a>.</p>
-
-<h3 id="jekyll-themes">Jekyll Themes</h3>
-
-<p>Your Pages site will use the layout and styles from the Jekyll theme you have selected in your <a href="https://github.com/pm623/MolecularDynamicsSimulation/settings/pages">repository settings</a>. The name of this theme is saved in the Jekyll <code class="language-plaintext highlighter-rouge">_config.yml</code> configuration file.</p>
-
-<h3 id="support-or-contact">Support or Contact</h3>
-
-<p>Having trouble with Pages? Check out our <a href="https://docs.github.com/categories/github-pages-basics/">documentation</a> or <a href="https://support.github.com/contact">contact support</a> and we’ll help you sort it out.</p>
 
         </section>
 
