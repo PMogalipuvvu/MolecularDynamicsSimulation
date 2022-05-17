@@ -174,13 +174,42 @@ The fourth and final responsibility of the C program was drawing to the VGA. It 
 
 <h3 id="markdown">Hardware design</h3>
 
-<p align="justify">To implement the LJ equation  to calculate the forces, would require a minimum of eight multipliers and one inversion to calculate 1/r^2, allowing for a maximum of parallel solvers. One method to reduce the number of multipliers is to reuse a single multiplier and use a state machine to control the inputs to and outputs from it. However, this method has the disadvantage of taking multiple cycles to calculate the value.<br><br>
-
-On the other hand, a  purely combinational implementation can compute the acceleration instantly and the ARM does not need to wait for the iterator to finish computation. This allows for a significant increase in the speed and also reduces the complexity of the implementation. <br><br>
-  
-To implement the calculation of 1/r^2, we opted to use a lookup table with varying precision. The maximum distance between the particles for interaction to occur is 15 pixels , This means that the lookup table needs to support values ranging from 0-255. However, only the interactions where the particles are close to each other have a significant effect. So, the rom table is more precise (with 0.2 of increments) when the r^2 is between 0-50 and coarser (with increments of 2) beyond that. These optimizations lead to a table of ~300 entries. The lookup tables are single ported and each iterator is initialized with its own table to allow for fast calculations. To support a value of 255 and maintain a good precision, a fixed point of 10.17 is chosen.<br><br>
-  
-A consequence of the fixed point arithmetic and the approximation from the lookup table is that occasionally, the attractions and repulsion may experience a sharp spike when the particles come very close to each other (i.e. the particle positions overlap). This tremendous increase in acceleration causes a ripple effect when the particles interact with each other and destabilizes the entire system. To prevent such anomalies, the attraction is capped to a maximum of 1 and the repulsion is capped to a maximum of 3.<br><br>
+<p align="justify">The hardware design underwent a number of iterations as we experimented with number precision and hardware efficiency. 
+    The very first implementation of the acceleration solver included a sequential unit which implemented distinct portions of the force 
+    calculation on different clock cycles. This was done with the intention of using a single lookup table so that reads from the table from 
+    parallel solvers could be staggered. The lookup table for the 1/r (really 1/r2) calculation was initially >2000 elements large. This had 
+    an enormous impact on the total logic utilization and allowed only 1 table to exist on the FPGA at any given time. The pipelined solvers 
+    were relatively inefficient because they still required the same total number of multipliers to be used, and required staggering the startup
+    of all the solvers by a single cycle to ensure that they could read from the single lookup table. <br><br>
+    
+R here is the distance between particles. The Leonard Jones force fell off so quickly that after a distance of 16 pixels apart we considered that 
+    force to be negligible in the hardware implementation. The 1/r2 lookup then needed to cover a range 0-255 (we indexed into the table with r2). 
+    The original strategy included having a fixed point lookup for every increment of 0.2 in the 0-255 range. The design checked for the highest 
+    threshold that the lookup number was less than and assigned a 10.17 fixed point number corresponding to 1/r2. We realized that the precision 
+    of the lookup table only really mattered when particles were extremely close to each other due to the highly exponential repulsive portion of 
+    the LJ force. We therefore amended the table to include a variable precision lookup. The new implementation included higher precision 
+    (increments of 0.2) for r^2 between 0-50, and a coarser lookup (increments of 2) beyond that. These optimizations lead to a table of ~300 entries. 
+    This allowed us to instantiate a lookup table for every individual force solver. All the lookup tables were generated procedurally in matlab by 
+    using basic binary operations to convert decimal to fixed point and appending strings together to produce something that looked like verilog.<br><br>
+    
+Given the setup cost and general inefficiency of the pipelined solvers, and the fact that the lookup table was made much smaller with no observable changes 
+    in the physics, we abandoned that design altogether. The next acceleration solver design was purely combinational, which offered a significant increase 
+    in speed. The Leonard Jones force and the bond forces for a particle pair were calculated step by step. First, the differences in the x and y positions 
+    of the two particles were calculated. These deltas were both squared, and r2 was assigned to the sum of both these distances. This was done to avoid taking 
+    the square root. A lookup was performed using r2 to calculate 1/r2, regardless of the particle distance. Any number greater than the threshold was assigned 
+    0. The attraction was calculated as the product of (1/r2) << 6 by itself twice to get the 1/r6 attraction term of the LJ equation. The left shift by 6 is 
+    essentially the sigma term of the LJ equation which governs the interaction distance. This was experimentally determined to be a stable value based on our
+    simulation, and just required a bit of tweaking to figure out. Repulsion was calculated in a similar fashion but as the square of the attraction. We mentioned
+    previously that the LJ potential was not useful, only the force itself. This is true, but calculating the potential saves a number of multipliers. A good
+    approximation to the subsequent derivation is dividing the potential by r2 and multiplying by the x and y distances between the particles. This yields the
+    total acceleration due to LJ. Some control logic was required to regulate the stability of the simulation. A consequence of the fixed point arithmetic and
+    the approximation from the lookup table was that occasionally, the attractions and repulsion may experience a sharp spike when the particles come very close
+    to each other (i.e. the particle positions overlap). This tremendous increase in acceleration causes a ripple effect when the particles interact with each
+    other and destabilizes the entire system. To prevent such anomalies, both the attraction and repulsion were capped which kept the system stable. It was 
+    also possible that the squared distance between particles was large enough to overflow our fixed point notation, so a check on the individual x and y 
+    squared distances was required before data from the r2 lookup could be used.  In a similar fashion, an elastic spring force was added to the total x and 
+    y components of each particle acceleration so long as they fell within a certain radius of one another.<br><br>
+    
 </p>
 
 <h2 id="markdown">Results</h2>
