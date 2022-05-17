@@ -131,7 +131,7 @@ This makes it necessary to recalculate position, velocity, and acceleration for 
 
 
 <h2 id="markdown">System Design</h2>
-<p align="justify">The flow of information in this lab is as follows: user input is communicated to the ARM via a C program running on the ARM through a USB mouse and input at the command line to control program state. The ARM, a bus master for communication on the Cyclone V board, passes particle positions to the FPGA via PIO ports where the hardware corresponding to the acceleration calculation for the simulator has been stored. A single solver on the FPGA reads in a pair of particle positions and calculates the forces on each particle due to the other. These forces are sent back to the ARM via PIOs where the ARM collects them and updates particle positions accordingly using the verlet algorithm. Particles are displayed in the top left region of the VGA from the ARM.</p>
+<!-- <p align="justify">The flow of information in this lab is as follows: user input is communicated to the ARM via a C program running on the ARM through a USB mouse and input at the command line to control program state. The ARM, a bus master for communication on the Cyclone V board, passes particle positions to the FPGA via PIO ports where the hardware corresponding to the acceleration calculation for the simulator has been stored. A single solver on the FPGA reads in a pair of particle positions and calculates the forces on each particle due to the other. These forces are sent back to the ARM via PIOs where the ARM collects them and updates particle positions accordingly using the verlet algorithm. Particles are displayed in the top left region of the VGA from the ARM.</p> -->
 
 
 <h3 id="markdown">High Level Design Considerations</h3>
@@ -179,7 +179,8 @@ A consequence of the fixed point arithmetic and the approximation from the looku
 <h2 id="markdown">Results</h2>
 <p align="justify">Phase changes were successfully observed in the molecular simulation.<br><br>
 
-  Without gravity, molecular interactions without manipulating the energy of the system were akin to that of a liquid floating in space. When gravity is turned on the molecules seem to form fit the container just as a liquid would. Figure X demonstrates the composition fitting the container.<br><br>
+  Relative to a pure C implementation, the physics captured were indistinguishable. This was a huge success given the use of fixed point notation to record acceleration and position in the FPGA implementation, and it validated all of our verification testing in modelsim to ensure we maintained high number precision. Additionally, it indicated that the discrete lookups performed for the 1/r calculation were good enough, and that the hybrid fine/course lookup strategy used was working. In terms of speed, the FPGA implementation was observed to be slightly faster than the C implementation. It should be mentioned that the C implementation was a barebones version of the simulation, and did not capture all the physics modeled in the final version nor include all the UI features that required threading the application. Even with these factors working in favor of the C implementation, it could only handle about 100 particles before slowing significantly. “Slowing” is an ambiguous term, but it can be thought of as the frame rate dropping to a point where individual frames are distinguishable to the eye. The same effect was observed on the FPGA implementation around 150 particles. Additionally, phase changes were successfully observed in the molecular simulation.
+  When gravity is turned on the molecules seem to form fit the container just as a liquid would. Figure 1 demonstrates the composition fitting the container.<br><br>
 
 
 
@@ -202,7 +203,7 @@ A consequence of the fixed point arithmetic and the approximation from the looku
 
   Figure 1. Molecules fit container like a liquid when gravity is toggled<br><br>
   
-  The interesting part about adding and removing energy from the system is that the changes were not permanent. When energy was added to the system, the atoms would fly apart as bonds broke and the LJ potentials were escaped. Atoms would fly around the screen at high velocity and collide into the walls and each other without reforming bonds or getting stuck together. To do this though the add energy command in the user interface would have to be “spammed”. In other words, we would have to continuously add energy to keep the molecules in the simulated gas phase. Something about the modeled physics implicitly damped particle motion so that after a short period of time without adding energy we would observe a phase change back to the liquid state. This change is shown in figure ___ below.<br><br>
+  The interesting part about adding and removing energy from the system is that the changes were not permanent. When energy was added to the system, the atoms would fly apart as bonds broke and the LJ potentials were escaped. Atoms would fly around the screen at high velocity and collide into the walls and each other without reforming bonds or getting stuck together. To do this though the add energy command in the user interface would have to be “spammed”. In other words, we would have to continuously add energy to keep the molecules in the simulated gas phase. Something about the modeled physics implicitly damped particle motion so that after a short period of time without adding energy we would observe a phase change back to the liquid state. This change is shown in Figure 2 below.<br><br>
   
   
   
@@ -220,7 +221,7 @@ A consequence of the fixed point arithmetic and the approximation from the looku
   Figure 2. Progression of condensation without gravity for a system with > 100 particles<br><br>
   
   
-  Initially energy was added by the user to start the system in the gas phase. Figure X. demonstrates the implicit cooling effect we observed in the simulation. When given time to equilibrate clusters of molecules started to form and then larger ones would form as smaller ones collided with them. The opposite was true in the solid phase. Cooling the composition down continuously would leave molecules in a rigid crystal structure. Due to the way we handled bonding, each atom would form a bond with 6 neighbors, and a 2D hexagonal structure was observed.<br><br>
+  Initially energy was added by the user to start the system in the gas phase. Figure 3. demonstrates the implicit cooling effect we observed in the simulation. When given time to equilibrate clusters of molecules started to form and then larger ones would form as smaller ones collided with them. The opposite was true in the solid phase. Cooling the composition down continuously would leave molecules in a rigid crystal structure. Due to the way we handled bonding, each atom would form a bond with 6 neighbors, and a 2D hexagonal structure was observed.<br><br>
   
   
   
