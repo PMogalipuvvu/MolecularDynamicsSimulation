@@ -155,13 +155,20 @@ Each solver has its own set of PIOs to communicate with. The reason for this is 
 </p>
 
 <h3 id="markdown">C Program design</h3>
-<p align="justify">The primary design considerations of the system involved deciding which parts of the LJ equation to offload to the hardware. Computing the forces (i.e. acceleration) involved around 8 multiplications and a division operation, moving that to hardware had the potential to offer the biggest improvement. The net forces on the particles are caused by their interactions and elastic bonds sent via pio ports. With a maximum of 10 parallel solvers, the system computes the interactions of 1 particle with 10 particles at a time.<br><br>
-
-As described in the Mathematical Background, the walls act as a spring with a spring constant to govern the stiffness of the wall. When a particle goes out of bounds, the walls exert the force in the other direction and bring the particle back into the bounds.<br><br>
-  
-This net acceleration is used to calculate the position and the velocity updates of  the particles. The C program then draws the updated particles onto the screen  Additionally, a separate function determines the color of the particles based on the current velocity of the  particle. C’s ability to easily manipulate multiple arrays easily, influenced the decision to only calculate the acceleration in hardware.<br><br>
-  
-To enhance the user experience, a mouse interface was added to add the particles into the system. The raw data received from the mouse contains the relative change since the last update. So, to maintain an accurate record of the position, the mouse is initialized to be at the center of the screen and the relative change is accumulated to calculate the current position. On a single mouse click, the program creates 10 new particles with randomly initialized positions and velocities. This UX also allows the user to dynamically change the size of the box and add/remove energy from the system. The removal/addition of energy is handled by subtracting/adding a factor to the current velocity. Additionally, the gravity can be toggled to observe the interaction of the particles in isolation. The user can also dynamically change the box size using key inputs and the particles out of bounds at that time will be pushed into the box automatically.<br><br>
+<p align="justify">The C program has four primary functions. The first is handling user input.  To enhance the UX, a mouse was integrated into the system. Raw data is parsed from the mouse driver in the Linux dev directory and presented to the program in a usable format. 
+    X and Y deltas are used to change the draw location of the mouse to the VGA. Every time the mouse is moved, its old location is cleared before its new location is drawn, to prevent continuously redrawing the same shape. To maintain an accurate record of the position, 
+    the mouse is initialized to be at the center of the screen and the relative change is accumulated to calculate the current position. The mouse cursor is represented as a hollow circle, which when clicked adds a number of new particles to the screen with randomly initialized 
+    positions and velocities. The UI also takes user input at the command line to control the program state. “g” toggles gravity, “w” adds energy to the system, “s” removes energy from the system, “a” shrinks the particle container, and “d” makes the container larger. The removal/addition 
+    of energy is handled by subtracting/adding a factor to the current velocity. The user input information is handled in a separate thread.<br><br>
+    
+The second primary function in C is the implementation of the Verlet algorithm. The verlet algorithm handles the position updates of all the particles. The update itself has linear time complexity because each particle on screen must be iterated over. Calculating the acceleration required 
+    for the verlet update has O(n2) time complexity so C relinquishes control of this portion of the algorithm to the FPGA by writing particle-position pairs to PIOs for hardware solvers to access. The hardware solvers immediately write the results back to the ARM. Mapping to the required 
+    memory addresses (previously configured in Qsys as PIO ports) was done using the M-map function which calculated virtual addresses corresponding to the physical memory addresses assigned to the PIOs. The virtual addresses in C could be directly written to and read from. <br><br>
+    
+The third responsibility of the C program was as a record keeper. Because the verlet algorithm needed to be implemented in C for reasons discussed previously, we also needed to track the particle accelerations, velocities, and positions. This was done by storing data in arrays.<br><br>
+    
+The fourth and final responsibility of the C program was drawing to the VGA. It drew the container, the mouse cursor, and all the particles corresponding to the array of particle positions. A separate function determines the color of the particles based on the current velocity of that particle. 
+    The VGA was not drawn on every iteration of the verlet algorithm. A user configurable parameter was set to determine the number of verlet steps to take for every draw to the VGA. We did not anticipate any bottlenecks with drawing to the VGA given we were only using a small portion of the display.<br><br>
 </p>
 
 
@@ -177,7 +184,7 @@ A consequence of the fixed point arithmetic and the approximation from the looku
 </p>
 
 <h2 id="markdown">Results</h2>
-<p align="justify">Phase changes were successfully observed in the molecular simulation.<br><br>
+<p align="justify">
 
   Relative to a pure C implementation, the physics captured were indistinguishable. This was a huge success given the use of fixed point notation to record acceleration and position in the FPGA implementation, and it validated all of our verification testing in modelsim to ensure we maintained high number precision. Additionally, it indicated that the discrete lookups performed for the 1/r calculation were good enough, and that the hybrid fine/course lookup strategy used was working. In terms of speed, the FPGA implementation was observed to be slightly faster than the C implementation. It should be mentioned that the C implementation was a barebones version of the simulation, and did not capture all the physics modeled in the final version nor include all the UI features that required threading the application. Even with these factors working in favor of the C implementation, it could only handle about 100 particles before slowing significantly. “Slowing” is an ambiguous term, but it can be thought of as the frame rate dropping to a point where individual frames are distinguishable to the eye. The same effect was observed on the FPGA implementation around 150 particles. Additionally, phase changes were successfully observed in the molecular simulation.
   When gravity is turned on the molecules seem to form fit the container just as a liquid would. Figure 1 demonstrates the composition fitting the container.<br><br>
